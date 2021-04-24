@@ -151,6 +151,7 @@ class SfPdfViewer extends StatefulWidget {
   /// ```
   SfPdfViewer.network(String src,
       {Key? key,
+      Map<String, String>? headers,
       this.canShowScrollHead = true,
       this.pageSpacing = 4,
       this.controller,
@@ -168,7 +169,7 @@ class SfPdfViewer extends StatefulWidget {
       this.initialZoomLevel = 1,
       this.interactionMode = PdfInteractionMode.selection,
       this.searchTextHighlightColor = const Color(0xFFE56E00)})
-      : _provider = NetworkPdf(src),
+      : _provider = NetworkPdf(src, headers),
         assert(pageSpacing >= 0),
         super(key: key);
 
@@ -1050,6 +1051,8 @@ class SfPdfViewerState extends State<SfPdfViewer> with WidgetsBindingObserver {
                                 if (!_pdfPagesKey.containsKey(pageIndex)) {
                                   _pdfPagesKey[pageIndex] = GlobalKey();
                                 }
+                                final isOverflowed = _originalWidth![index] >
+                                    _viewportConstraints.maxWidth;
                                 if (kIsWeb &&
                                     !_isMobile &&
                                     _originalWidth![index] > _maxPdfPageWidth) {
@@ -1064,10 +1067,10 @@ class SfPdfViewerState extends State<SfPdfViewer> with WidgetsBindingObserver {
                                   _pdfImages[pageIndex],
                                   viewportGlobalRect,
                                   widget.interactionMode,
-                                  (kIsWeb && !_isMobile)
+                                  (kIsWeb && !_isMobile && !isOverflowed)
                                       ? _originalWidth![index]
                                       : calculatedSize.width,
-                                  (kIsWeb && !_isMobile)
+                                  (kIsWeb && !_isMobile && !isOverflowed)
                                       ? _originalHeight![index]
                                       : calculatedSize.height,
                                   widget.pageSpacing,
@@ -1087,7 +1090,7 @@ class SfPdfViewerState extends State<SfPdfViewer> with WidgetsBindingObserver {
                                   _isMobile,
                                   _pdfViewerController._pdfTextSearchResult,
                                 );
-                                if (kIsWeb && !_isMobile) {
+                                if (kIsWeb && !_isMobile && !isOverflowed) {
                                   _pdfPages[pageIndex] = PdfPageInfo(
                                       totalHeight,
                                       Size(_originalWidth![index],
@@ -1455,6 +1458,11 @@ class SfPdfViewerState extends State<SfPdfViewer> with WidgetsBindingObserver {
 
   /// Handles tap event of pdf container.
   void _handleOnTap() {
+    _pdfPagesKey[_pdfViewerController.pageNumber]
+        ?.currentState
+        ?.canvasRenderBox
+        ?.getSelectionDetails()
+        .enableTapSelection = false;
     _clearSelection();
     _pdfPagesKey[_pdfViewerController.pageNumber]
         ?.currentState
@@ -2627,6 +2635,8 @@ class PdfViewerController extends _ValueChangeNotifier {
     _zoomLevel = 1.0;
     _currentPageNumber = 0;
     _totalPages = 0;
+    _verticalOffset = 0.0;
+    _horizontalOffset = 0.0;
     _pageNavigator = null;
     notifyPropertyChangedListeners();
   }

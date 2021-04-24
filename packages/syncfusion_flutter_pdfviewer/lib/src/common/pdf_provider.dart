@@ -30,12 +30,17 @@ class NetworkPdf extends PdfProvider {
   /// Creates an object that fetches the PDF at the given URL.
   ///
   /// The arguments [url] must not be null.
-  NetworkPdf(String url) : assert(url.isNotEmpty) {
+  NetworkPdf(String url, Map<String, String>? headers)
+      : assert(url.isNotEmpty) {
     _url = url;
+    _headers = headers;
   }
 
   /// The URL from which the PDF will be fetched.
   late String _url;
+
+  /// The document headers
+  Map<String, String>? _headers;
 
   /// The document bytes
   Uint8List? _documentBytes;
@@ -44,7 +49,8 @@ class NetworkPdf extends PdfProvider {
   Future<Uint8List> getPdfBytes(BuildContext context) async {
     if (_documentBytes == null) {
       try {
-        _documentBytes = await http.readBytes(Uri.parse(_url));
+        _documentBytes =
+            await http.readBytes(Uri.parse(_url), headers: _headers);
       } on Exception catch (e) {
         throw (e.toString());
       }
